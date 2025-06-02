@@ -56,6 +56,26 @@ func (q *Queries) DeleteAllUsers(ctx context.Context) error {
 	return err
 }
 
+const getLoggedUser = `-- name: GetLoggedUser :one
+SELECT id, created_at, updated_at, name
+FROM users
+WHERE updated_at = (
+    SELECT max(updated_at)
+    FROM USERS)
+`
+
+func (q *Queries) GetLoggedUser(ctx context.Context) (User, error) {
+	row := q.db.QueryRowContext(ctx, getLoggedUser)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.Name,
+	)
+	return i, err
+}
+
 const getUser = `-- name: GetUser :one
 SELECT id, created_at, updated_at, name 
 FROM users

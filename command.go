@@ -86,9 +86,62 @@ func handlerUsers(s *state, cmd command) error {
 		os.Exit(1)
 	}
 
-	for _, e := range(users) {
-		if e.
-		Println(e.Name)
+	logged, err := s.db.GetUser(context.Background(), s.conf.UserName)
+	if err != nil {
+		fmt.Println("Error:", err)
+		os.Exit(1)
+	}
+
+	for _, e := range users {
+		if e == logged {
+			fmt.Println("*", e.Name, "(current)")
+			continue
+		}
+		fmt.Println("*", e.Name)
+	}
+
+	return nil
+}
+
+func handlerAgg(state *state, cmd command) error {
+	feed, err := fetchFeed(context.Background(), "https://www.wagslane.dev/index.xml")
+	if err != nil {
+		fmt.Println("Error:", err)
+		os.Exit(1)
+	}
+
+	decodeHtmlEntities(feed)
+
+	fmt.Println(feed)
+
+	return nil
+}
+
+func handlerAddFeed(s *state, cmd command) error {
+	if len(cmd.args) != 2 {
+		fmt.Println("Error: addfeed takes exactly two arguments")
+		os.Exit(1)
+	}
+
+	user, err := s.db.GetUser(context.Background(), s.conf.UserName)
+	if err != nil {
+		fmt.Println("Error: addfeed takes exactly two arguments")
+		os.Exit(1)
+	}
+
+	feedData := database.CreateFeedParams{
+		ID:        uuid.New(),
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+		Name:      cmd.args[0],
+		Url:       cmd.args[1],
+		UserID:    user.ID,
+	}
+
+	_, err = s.db.CreateFeed(context.Background(), feedData)
+	if err != nil {
+		fmt.Println("Error:", err)
+		os.Exit(1)
 	}
 
 	return nil
