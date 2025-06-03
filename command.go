@@ -194,6 +194,31 @@ func handlerFollow(s *state, cmd command) error {
 	return nil
 }
 
+func handlerFollowing(s *state, cmd command) error {
+	current_user, err := s.db.GetLoggedUser(context.Background())
+	if err != nil {
+		fmt.Println("Error:", err)
+		os.Exit(1)
+	}
+
+	feed_follow, err := s.db.GetFeedFollowsForUser(context.Background(), current_user.ID)
+	if err != nil {
+		fmt.Println("Error:", err)
+		os.Exit(1)
+	}
+
+	for _, e := range feed_follow {
+		feed, err := s.db.GetFeedByID(context.Background(), e.FeedID)
+		if err != nil {
+			fmt.Println("Error:", err)
+			os.Exit(1)
+		}
+		fmt.Println(feed.Name)
+	}
+
+	return nil
+}
+
 type commands struct {
 	commandFunctions map[string]func(state *state, cmd command) error
 }
