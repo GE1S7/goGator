@@ -103,6 +103,20 @@ func handlerUsers(s *state, cmd command) error {
 	return nil
 }
 
+func handlerFeeds(s *state, cmd command) error {
+	feeds, err := s.db.GetFeeds(context.Background())
+	if err != nil {
+		fmt.Println("Error:", err)
+		os.Exit(1)
+	}
+	fmt.Println("Feeds:")
+	for _, e := range feeds {
+		fmt.Println("username:", e.Name_2.String, "feedname:", e.Name, "url:", e.Url)
+	}
+
+	return nil
+}
+
 func handlerAgg(state *state, cmd command) error {
 	feed, err := fetchFeed(context.Background(), "https://www.wagslane.dev/index.xml")
 	if err != nil {
@@ -143,6 +157,39 @@ func handlerAddFeed(s *state, cmd command) error {
 		fmt.Println("Error:", err)
 		os.Exit(1)
 	}
+
+	return nil
+}
+
+func handlerFollow(s *state, cmd command) error {
+	if len(cmd.args) != 1 {
+		fmt.Println("Error: follow takes one url argument")
+		os.Exit(1)
+	}
+
+	current_user, err := s.db.GetLoggedUser(context.Background())
+	if err != nil {
+		fmt.Println("Error:", err)
+		os.Exit(1)
+	}
+
+	feed, err := s.db.GetFeed(context.Background(), cmd.args[0])
+
+	newfeedfollow := database.CreateFeedFollowParams{
+		ID:        uuid.New(),
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+		UserID:    current_user.ID,
+		FeedID:    feed.ID,
+	}
+	feedFollowFmtNames, err := s.db.CreateFeedFollow(context.Background(), newfeedfollow)
+	if err != nil {
+		fmt.Println("Error:", err)
+		os.Exit(1)
+	}
+
+	fmt.Println(feedFollowFmtNames.Name)
+	fmt.Println(feedFollowFmtNames.Name_2)
 
 	return nil
 }
