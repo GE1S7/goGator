@@ -21,6 +21,17 @@ type command struct {
 	args []string
 }
 
+func middlewareLoggedIn(handler func(s *state, cmd command, user database.User) error) func(*state, command) error {
+	return func(s *state, cmd command) error {
+		user, err := s.db.GetUser(context.Background(), s.conf.UserName)
+		if err != nil {
+			fmt.Println("Error: ", err)
+			os.Exit(1)
+		}
+		return handler(s, cmd, user)
+	}
+}
+
 func handlerLogin(s *state, cmd command) error {
 	if len(cmd.args) == 0 {
 		return fmt.Errorf("Not enough arguments: username required.")
@@ -131,14 +142,8 @@ func handlerAgg(state *state, cmd command) error {
 	return nil
 }
 
-func handlerAddFeed(s *state, cmd command) error {
+func handlerAddFeed(s *state, cmd command, user database.User) error {
 	if len(cmd.args) != 2 {
-		fmt.Println("Error: addfeed takes exactly two arguments")
-		os.Exit(1)
-	}
-
-	user, err := s.db.GetUser(context.Background(), s.conf.UserName)
-	if err != nil {
 		fmt.Println("Error: addfeed takes exactly two arguments")
 		os.Exit(1)
 	}
@@ -152,7 +157,7 @@ func handlerAddFeed(s *state, cmd command) error {
 		UserID:    user.ID,
 	}
 
-	_, err = s.db.CreateFeed(context.Background(), feedData)
+	_, err := s.db.CreateFeed(context.Background(), feedData)
 	if err != nil {
 		fmt.Println("Error:", err)
 		os.Exit(1)
@@ -175,15 +180,9 @@ func handlerAddFeed(s *state, cmd command) error {
 	return nil
 }
 
-func handlerFollow(s *state, cmd command) error {
+func handlerFollow(s *state, cmd command, current_user database.User) error {
 	if len(cmd.args) != 1 {
 		fmt.Println("Error: follow takes one url argument")
-		os.Exit(1)
-	}
-
-	current_user, err := s.db.GetLoggedUser(context.Background())
-	if err != nil {
-		fmt.Println("Error:", err)
 		os.Exit(1)
 	}
 
@@ -208,13 +207,7 @@ func handlerFollow(s *state, cmd command) error {
 	return nil
 }
 
-func handlerFollowing(s *state, cmd command) error {
-	current_user, err := s.db.GetLoggedUser(context.Background())
-	if err != nil {
-		fmt.Println("Error:", err)
-		os.Exit(1)
-	}
-
+func handlerFollowing(s *state, cmd command, current_user database.User) error {
 	feed_follow, err := s.db.GetFeedFollowsForUser(context.Background(), current_user.ID)
 	if err != nil {
 		fmt.Println("Error:", err)
