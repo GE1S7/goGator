@@ -230,6 +230,31 @@ type commands struct {
 	commandFunctions map[string]func(state *state, cmd command) error
 }
 
+func handlerUnfollow(s *state, cmd command, current_user database.User) error {
+	if len(cmd.args) != 1 {
+		fmt.Println("Error: unfollow takes exatcly one argument")
+	}
+
+	feed, err := s.db.GetFeed(context.Background(), cmd.args[0])
+	if err != nil {
+		fmt.Println("Error:", err)
+		os.Exit(1)
+	}
+
+	feedfollow := database.DeleteFeedFollowParams{
+		UserID: current_user.ID,
+		FeedID: feed.ID,
+	}
+
+	err = s.db.DeleteFeedFollow(context.Background(), feedfollow)
+	if err != nil {
+		fmt.Println("Error:", err)
+		os.Exit(1)
+	}
+
+	return nil
+}
+
 func (c *commands) run(s *state, cmd command) error {
 	// check if command with state s exist and runs it
 	_, ok := c.commandFunctions[cmd.name]
