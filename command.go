@@ -128,18 +128,27 @@ func handlerFeeds(s *state, cmd command) error {
 	return nil
 }
 
-func handlerAgg(state *state, cmd command) error {
-	feed, err := fetchFeed(context.Background(), "https://www.wagslane.dev/index.xml")
+func handlerAgg(s *state, cmd command) error {
+	if len(cmd.args) != 1 {
+		fmt.Println("Error: agg takes exatcly one argument")
+	}
+
+	fmt.Println("Collecting feeds every", cmd.args[0])
+
+	timeBetweenReqs, err := time.ParseDuration(cmd.args[0])
 	if err != nil {
 		fmt.Println("Error:", err)
 		os.Exit(1)
 	}
 
-	decodeHtmlEntities(feed)
+	ticker := time.NewTicker(timeBetweenReqs)
 
-	fmt.Println(feed)
+	for ; ; <-ticker.C {
+		scrapeFeeds(s)
+	}
 
 	return nil
+
 }
 
 func handlerAddFeed(s *state, cmd command, user database.User) error {
