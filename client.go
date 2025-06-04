@@ -7,6 +7,10 @@ import (
 	"html"
 	"io"
 	"net/http"
+	"time"
+
+	"github.com/GE1S7/gator/internal/database"
+	"github.com/google/uuid"
 )
 
 type RSSFeed struct {
@@ -77,6 +81,23 @@ func scrapeFeeds(s *state) error {
 		return err
 	}
 	for _, e := range fetchedFeed.Channel.Item {
+		publicationTime, err := time.Parse(time.RFC1123, e.PubDate)
+		if err == nil {
+			return err
+		}
+
+		post := database.CreatePostParams{
+			ID:          uuid.New(),
+			CreatedAt:   time.Now(),
+			UpdatedAt:   time.Now(),
+			Title:       e.Title,
+			Url:         e.Link,
+			Description: e.Description,
+			PublishedAt: publicationTime,
+			FeedID:      feed.ID,
+		}
+
+		s.db.CreatePost(context.Background(), post)
 		fmt.Println(e.Title)
 	}
 
