@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"encoding/xml"
+	"fmt"
 	"html"
 	"io"
 	"net/http"
@@ -59,4 +60,25 @@ func decodeHtmlEntities(feed *RSSFeed) {
 		e.Title = html.UnescapeString(e.Title)
 		e.Description = html.UnescapeString(e.Description)
 	}
+}
+
+func scrapeFeeds(s *state) error {
+	feed, err := s.db.GetNextFeedToFetch(context.Background())
+	if err != nil {
+		return err
+	}
+	err = s.db.MarkFeedFetched(context.Background(), feed.ID)
+	if err != nil {
+		return err
+	}
+
+	fetchedFeed, err := fetchFeed(context.Background(), feed.Url)
+	if err != nil {
+		return err
+	}
+	for _, e := range fetchedFeed.Channel.Item {
+		fmt.Println(e.Title)
+	}
+
+	return nil
 }
